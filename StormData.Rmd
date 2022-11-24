@@ -1,0 +1,55 @@
+---
+title: "Storm Data Analysis"
+author: "Den Lim"
+date: "2022-11-24"
+output: html_document
+---
+
+
+----------------------------------------------
+** Synopsis
+
+
+
+**Initial Set-up
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+install.packages("tidyverse")
+library(tidyverse)
+```
+
+**Loading csv using only relevant columns to preserve memory usage
+```{r read csv, cache=TRUE}
+  stormData <- read_csv("repdata_data_StormData.csv.bz2", 
+                        show_col_types = FALSE, 
+                        col_types=cols_only(EVTYPE=col_character(),
+                                            FATALITIES=col_number(),
+                                            INJURIES=col_number(),
+                                            PROPDMG=col_number(),
+                                            PROPDMGEXP=col_character(),
+                                            CROPDMG=col_number(),
+                                            CROPDMGEXP=col_character(),
+                                            REFNUM=col_number()))
+```
+
+** Data processing
+-use the PROPDMGEXP and CROPDMGEXP to create two new number columns
+PROPDMGMUL and CROPDMGMUL to create multipliers for PROPDMG and CROPDMG
+-replace multiplier NAs with 1's. 
+-calculate totalDMG from the products of PROPDMGxPROPDMGMUL and CROPDMGxCROPDMGMUL
+```{r processing}
+
+newStormData <- stormData %>% 
+                  mutate(PROPDMGMUL = ifelse(PROPDMGEXP=="M", 1000, 1),
+                    CROPDMGMUL = ifelse(CROPDMGEXP=="M", 1000, 1)) %>%
+                  select(EVTYPE, FATALITIES, INJURIES, PROPDMG, 
+                         PROPDMGMUL, CROPDMG, CROPDMGMUL, REFNUM)
+newStormData$PROPDMGMUL <- newStormData$PROPDMGMUL %>% 
+                  replace_na(1)
+newStormData$CROPDMGMUL <- newStormData$CROPDMGMUL %>% 
+                  replace_na(1)
+newStormData <- newStormData %>% 
+                  mutate(totalDMG = (PROPDMG*PROPDMGMUL +
+                                       CROPDMG*CROPDMGMUL))     
+```
+                     
