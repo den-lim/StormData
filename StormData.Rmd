@@ -37,6 +37,7 @@ library(tidyverse)
 PROPDMGMUL and CROPDMGMUL to create multipliers for PROPDMG and CROPDMG
 -replace multiplier NAs with 1's. 
 -calculate totalDMG from the products of PROPDMGxPROPDMGMUL and CROPDMGxCROPDMGMUL
+-remove entries where FATALITIES/INJURIES/PROPDMG and CROPDMG are all zero
 ```{r processing}
 
 newStormData <- stormData %>% 
@@ -50,6 +51,361 @@ newStormData$CROPDMGMUL <- newStormData$CROPDMGMUL %>%
                   replace_na(1)
 newStormData <- newStormData %>% 
                   mutate(totalDMG = (PROPDMG*PROPDMGMUL +
-                                       CROPDMG*CROPDMGMUL))     
+                                       CROPDMG*CROPDMGMUL))  
+newStormData <- newStormData %>% 
+                  mutate(totalHarm = (FATALITIES +
+                                       INJURIES)) %>%
+                  select(EVTYPE, FATALITIES, INJURIES, totalHarm, 
+                         totalDMG, REFNUM)
+newStormData <- subset(newStormData, !(totalDMG==0 & totalHarm==0))
 ```
+                
+**EVTYPE processing
+```{r}
+length(unique(newStormData$EVTYPE))
+```
+The above gives out 485 unique EVTYPES, when the documentation only shows that there are 55 as per NATIONAL WEATHER SERVICE INSTRUCTION 10-1605 (JULY 26, 2021)
+https://www.nws.noaa.gov/directives/sym/pd01016005curr.pdf
+
+Convert all EVTYPE entries to capital letters:
+```{r}
+newStormData$EVTYPE <- str_to_upper(newStormData$EVTYPE)
+length(unique(newStormData$EVTYPE))
+```
+This reduced the unique EVTYPES to 444.
+
+Changing " AND " to "/", "TSTM" to "THUNDERSTORM" 
+```{r}
+newStormData$EVTYPE <- gsub(" AND ","/",newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("TSTM", "THUNDERSTORM", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("CSTL", "COASTAL", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("WINDS", "WIND", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("FLOODS", "FLOOD", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("FLOODING", "FLOOD", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("CLOUDS", "CLOUD", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("^.*SLEET.*$", "SLEET", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("FREEZING RAIN", "SLEET", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("^.*BLIZZARD.*$", "BLIZZARD", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("FIRES", "FIRE", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("WILD FIRE", "WILDFIRE", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("LANDSLIDE", "DEBRIS FLOW", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("STORMS", "STORM", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("HIGH WIND/SEAS", "MARINE HIGH WIND", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("HIGH WIND AND SEAS", "MARINE HIGH WIND", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("RAINS", "RAIN", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("WINDS", "WIND", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("TORNADOES", "TORNADO", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("TUNDERSTORM", "THUNDERSTORM", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("WINS", "WIND", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("CLOU", "CLOUD", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("LIGNTNING", "LIGHTNING", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("LIGHTING", "LIGHTNING", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("THUNDERTORM", "THUNDERSTORM", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("FLOODIN", "FLOOD", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("FROST\\\\FREEZE", "FROST/FREEZE", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("THUNDERESTORM", "THUNDERSTORM", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("THUNDEERSTORM", "THUNDERSTORM", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("THUNERSTORM", "THUNDERSTORM", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("THUNDERSTROM", "THUNDERSTORM", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("FLASHFLOOD", "FLASH FLOOD", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("FLOOD FLASH", "FLASH FLOOD", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("FLOWS", "FLOW", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("FLD", "FLOOD", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("LAKE EFFECT SNOW", "LAKE-EFFECT SNOW", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("ROCK SLIDE", "DEBRIS FLOW", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("THUNDERSTORMWIND", "THUNDERSTORM WIND", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("THUDERSTORM WIND", "THUNDERSTORM WIND", 
+                            newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("THUNDERSTORM WIND LIGHTNING", "THUNDERSTORM WIND/LIGHTNING", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("THUNDERSTORM WIND HAIL", "THUNDERSTORM WIND/HAIL", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("HIGH WIND HEAVY RAIN", "HIGH WIND/HEAVY RAIN", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("HEAVY SURF COASTAL FLOOD", "HEAVY SURF/COASTAL FLOOD", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("WINTER STORM HIGH WIND", "WINTER STORM/HIGH WIND", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("MUDSLIDES", "DEBRIS FLOW", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("FLASH FLOOD WIND", "FLASH FLOOD/STRONG WIND", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("FUNNEL CLOUDD", "FUNNEL CLOUD", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("WATERSPOUT TORNADO", "WATERSPOUT/TORNADO", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("^STORM SURGE$", "STORM SURGE/TIDE", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("MUDSLIDE", "DEBRIS FLOW", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("MUD SLIDE", "DEBRIS FLOW", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("MUD SLIDES", "DEBRIS FLOW", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("GUSTNADO", "TORNADO", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("EXTREME WIND CHILL", "EXTREME COLD/WIND CHILL", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("EXTREME WINDCHILL", "EXTREME COLD/WIND CHILL", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("^EXTREME COLD$", "EXTREME COLD/WIND CHILL", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("DUST DEVIL WATERSPOUT", "DUST DEVIL/WATERSPOUT", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("MUD SLIDES URBAN FLOOD", "DEBRIS FLOW/FLOOD", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("FLASH FLOOD DEBRIS FLOW", "FLASH FLOOD/DEBRIS FLOW", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("WHIRLWIND", "TORNADO", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("TORNDAO", "TORNADO", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("AVALANCE", "AVALANCHE", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("GRASS FIRE", "WILDFIRE", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("LIGHTNING INJURY", "LIGHTNING", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("LIGHTNING THUNDERSTORM WIND", "LIGHTNING/THUNDERSTORM WIND", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("THUNDERSTORMW", "THUNDERSTORM WIND", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("SEVERE THUNDERSTORM WIND", "THUNDERSTORM WIND", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("EARLY FROST", "FROST/FREEZE", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("^FROST$", "FROST/FREEZE", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("^.*FREEZE$", "FROST/FREEZE", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("WINTER WEATHER/MIX", "WINTER WEATHER", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("EXTREME HEAT", "EXCESSIVE HEAT", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("RECORD HEAT", "EXCESSIVE HEAT", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("HEAT WAVE DROUGHT", "HEAT/DROUGHT", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("HEAT WAVE", "HEAT", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("HEAT WAVES", "HEAT", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("DRY", "DROUGHT", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("RECORD COLD", "EXTREME COLD/WIND CHILL", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("RECORD RAINFALL", "HEAVY RAIN", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("EXCESSIVE RAINFALL", "HEAVY RAIN", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("RECORD SNOW", "HEAVY SNOW", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("UNSEASONABLY WARM", "HEAT", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("^FOG$", "DENSE FOG", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("WILD/FOREST FIRE", "WILDFIRE", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("FOREST FIRE", "WILDFIRE", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("WINTRY MIX", "WINTER WEATHER", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("WINTER WEATHER MIX", "WINTER WEATHER", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("^COLD$", "COLD/WIND CHILL", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("^WIND CHILL$", "COLD/WIND CHILL", newStormData$EVTYPE)
+
+newStormData$EVTYPE <- gsub("RIP CURRENTS", "RIP CURRENT", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("RIVER FLOOD", "FLOOD", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("RECORD FLOOD", "FLOOD", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("MAJOR FLOOD", "FLOOD", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("URBAN FLOOD", "FLOOD", newStormData$EVTYPE)
+
+
+
+
+
+
+
+```
+
+Separate combined entries. (Those entries with "/")
+But we will need to remove those EVTYPES that do have "/" first.
+```{r}
+tempStormData <- newStormData
+finalStormData <-subset(tempStormData, EVTYPE=="COLD/WIND CHILL")
+tempStormData <-subset(tempStormData, EVTYPE!="COLD/WIND CHILL")
+finalStormData <-rbind(finalStormData, subset(tempStormData,
+                        EVTYPE=="EXTREME COLD/WIND CHILL"))
+tempStormData <-subset(tempStormData,
+                       EVTYPE!="EXTREME COLD/WIND CHILL")
+finalStormData <-rbind(finalStormData, subset(tempStormData,
+                        EVTYPE=="FROST/FREEZE"))
+tempStormData <-subset(tempStormData,EVTYPE!="FROST/FREEZE")
+finalStormData <-rbind(finalStormData, subset(tempStormData,
+                        EVTYPE=="HURRICANE/TYPHOON"))
+tempStormData <-subset(tempStormData,EVTYPE!="HURRICANE/TYPHOON")
+finalStormData <-rbind(finalStormData, subset(tempStormData,
+                        EVTYPE=="MARINE HURRICANE/TYPHOON"))
+tempStormData <-subset(tempStormData,
+                       EVTYPE!="MARINE HURRICANE/TYPHOON")
+finalStormData <-rbind(finalStormData, subset(tempStormData,
+                        EVTYPE=="STORM SURGE/TIDE"))
+tempStormData <-subset(tempStormData,
+                       EVTYPE!="STORM SURGE/TIDE")
+finalStormData <-rbind(finalStormData, subset(tempStormData,
+                        EVTYPE=="LAKE-EFFECT SNOW"))
+tempStormData <-subset(tempStormData,
+                       EVTYPE!="LAKE-EFFECT SNOW")
+tempStormData <- separate_rows(tempStormData, EVTYPE, sep="/")
+tempStormData <- separate_rows(tempStormData, EVTYPE, sep=",")
+tempStormData <- separate_rows(tempStormData, EVTYPE, sep="&")
+tempStormData <- separate_rows(tempStormData, EVTYPE, sep="-")
+tempStormData$EVTYPE <- gsub("\\s+", " ", tempStormData$EVTYPE)
+tempStormData$EVTYPE <- str_trim(tempStormData$EVTYPE, "both")
+
+```
+
+
+Transferring valid EVTYPE entries from tempStormData to finalStormData
+```{r}
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="ASTRONOMICAL LOW TIDE"))
+tempStormData <-subset(tempStormData,EVTYPE!="ASTRONOMICAL LOW TIDE")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="AVALANCHE"))
+tempStormData <-subset(tempStormData,EVTYPE!="AVALANCHE")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="BLIZZARD"))
+tempStormData <-subset(tempStormData,EVTYPE!="BLIZZARD")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="COASTAL FLOOD"))
+tempStormData <-subset(tempStormData,EVTYPE!="COASTAL FLOOD")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="DEBRIS FLOW"))
+tempStormData <-subset(tempStormData,EVTYPE!="DEBRIS FLOW")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="DENSE FOG"))
+tempStormData <-subset(tempStormData,EVTYPE!="DENSE FOG")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="DENSE SMOKE"))
+tempStormData <-subset(tempStormData,EVTYPE!="DENSE SMOKE")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="DROUGHT"))
+tempStormData <-subset(tempStormData,EVTYPE!="DROUGHT")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="DUST DEVIL"))
+tempStormData <-subset(tempStormData,EVTYPE!="DUST DEVIL")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="DUST STORM"))
+tempStormData <-subset(tempStormData,EVTYPE!="DUST STORM")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="EXCESSIVE HEAT"))
+tempStormData <-subset(tempStormData,EVTYPE!="EXCESSIVE HEAT")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="FLASH FLOOD"))
+tempStormData <-subset(tempStormData,EVTYPE!="FLASH FLOOD")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="FLOOD"))
+tempStormData <-subset(tempStormData,EVTYPE!="FLOOD")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="FREEZING FOG"))
+tempStormData <-subset(tempStormData,EVTYPE!="FREEZING FOG")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="FUNNEL CLOUD"))
+tempStormData <-subset(tempStormData,EVTYPE!="FUNNEL CLOUD")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="HAIL"))
+tempStormData <-subset(tempStormData,EVTYPE!="HAIL")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="HEAT"))
+tempStormData <-subset(tempStormData,EVTYPE!="HEAT")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="HEAVY RAIN"))
+tempStormData <-subset(tempStormData,EVTYPE!="HEAVY RAIN")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="HEAVY SNOW"))
+tempStormData <-subset(tempStormData,EVTYPE!="HEAVY SNOW")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="HIGH SURF"))
+tempStormData <-subset(tempStormData,EVTYPE!="HIGH SURF")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="HIGH WIND"))
+tempStormData <-subset(tempStormData,EVTYPE!="HIGH WIND")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="ICE STORM"))
+tempStormData <-subset(tempStormData,EVTYPE!="ICE STORM")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="LAKESHORE FLOOD"))
+tempStormData <-subset(tempStormData,EVTYPE!="LAKESHORE FLOOD")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="LIGHTNING"))
+tempStormData <-subset(tempStormData,EVTYPE!="LIGHTNING")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="MARINE DENSE FOG"))
+tempStormData <-subset(tempStormData,EVTYPE!="MARINE DENSE FOG")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="MARINE HAIL"))
+tempStormData <-subset(tempStormData,EVTYPE!="MARINE HAIL")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="MARINE HEAVY FREEZING SPRAY"))
+tempStormData <-subset(tempStormData,EVTYPE!="MARINE HEAVY FREEZING SPRAY")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="MARINE HIGH WIND"))
+tempStormData <-subset(tempStormData,EVTYPE!="MARINE HIGH WIND")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="MARINE LIGHTNING"))
+tempStormData <-subset(tempStormData,EVTYPE!="MARINE LIGHTNING")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="MARINE STRONG WIND"))
+tempStormData <-subset(tempStormData,EVTYPE!="MARINE STRONG WIND")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="MARINE THUNDERSTORM WIND"))
+tempStormData <-subset(tempStormData,EVTYPE!="MARINE THUNDERSTORM WIND")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="MARINE TROPICAL DEPRESSION"))
+tempStormData <-subset(tempStormData,EVTYPE!="MARINE TROPICAL DEPRESSION")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="MARINE TROPICAL STORM"))
+tempStormData <-subset(tempStormData,EVTYPE!="MARINE TROPICAL STORM")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="RIP CURRENT"))
+tempStormData <-subset(tempStormData,EVTYPE!="RIP CURRENT")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="SEICHE"))
+tempStormData <-subset(tempStormData,EVTYPE!="SEICHE")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="SLEET"))
+tempStormData <-subset(tempStormData,EVTYPE!="SLEET")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="SNEAKER WAVE"))
+tempStormData <-subset(tempStormData,EVTYPE!="SNEAKER WAVE")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="STRONG WIND"))
+tempStormData <-subset(tempStormData,EVTYPE!="STRONG WIND")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="THUNDERSTORM WIND"))
+tempStormData <-subset(tempStormData,EVTYPE!="THUNDERSTORM WIND")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="TORNADO"))
+tempStormData <-subset(tempStormData,EVTYPE!="TORNADO")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="TROPICAL DEPRESSION"))
+tempStormData <-subset(tempStormData,EVTYPE!="TROPICAL DEPRESSION")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="TROPICAL STORM"))
+tempStormData <-subset(tempStormData,EVTYPE!="TROPICAL STORM")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="TSUNAMI"))
+tempStormData <-subset(tempStormData,EVTYPE!="TSUNAMI")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="VOLCANIC ASH"))
+tempStormData <-subset(tempStormData,EVTYPE!="VOLCANIC ASH")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="WATERSPOUT"))
+tempStormData <-subset(tempStormData,EVTYPE!="WATERSPOUT")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="WILDFIRE"))
+tempStormData <-subset(tempStormData,EVTYPE!="WILDFIRE")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="WINTER STORM"))
+tempStormData <-subset(tempStormData,EVTYPE!="WINTER STORM")
+finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="WINTER WEATHER"))
+tempStormData <-subset(tempStormData,EVTYPE!="WINTER WEATHER")
+```
+
+```{r}
+tempStormData$EVTYPE <- gsub("HURRICANE.*", "HURRICANE/TYPHOON", 
+                            tempStormData$EVTYPE)
+finalStormData <-rbind(finalStormData, subset(tempStormData,
+                        EVTYPE=="HURRICANE/TYPHOON"))
+tempStormData <-subset(tempStormData,EVTYPE!="HURRICANE/TYPHOON")
+tempStormData$EVTYPE <- gsub("TYPHOON.*", "HURRICANE/TYPHOON", 
+                            tempStormData$EVTYPE)
+finalStormData <-rbind(finalStormData, subset(tempStormData,
+                        EVTYPE=="HURRICANE/TYPHOON"))
+tempStormData <-subset(tempStormData,EVTYPE!="HURRICANE/TYPHOON")
+newStormData$EVTYPE <- gsub("STORM SURGE", "STORM SURGE/TIDE", newStormData$EVTYPE)
+finalStormData <-rbind(finalStormData, subset(tempStormData,
+                        EVTYPE=="STORM SURGE/TIDE"))
+tempStormData <-subset(tempStormData,
+                       EVTYPE!="STORM SURGE/TIDE")
+tempStormData$EVTYPE <- gsub("TORNADO .*", "TORNADO", 
+                            tempStormData$EVTYPE)
+finalStormData <-rbind(finalStormData, subset(tempStormData,
+                        EVTYPE=="TORNADO"))
+tempStormData <-subset(tempStormData,EVTYPE!="TORNADO")
+tempStormData$EVTYPE <- gsub("THUNDERSTORM WIND .*", "THUNDERSTORM WIND", tempStormData$EVTYPE)
+finalStormData <-rbind(finalStormData, subset(tempStormData,
+                        EVTYPE=="THUNDERSTORM WIND"))
+tempStormData <-subset(tempStormData,EVTYPE!="THUNDERSTORM WIND")
+tempStormData$EVTYPE <- gsub("THUNDERSTORM WI.*", "THUNDERSTORM WIND", tempStormData$EVTYPE)
+finalStormData <-rbind(finalStormData, subset(tempStormData,
+                        EVTYPE=="THUNDERSTORM WIND"))
+tempStormData <-subset(tempStormData,EVTYPE!="THUNDERSTORM WIND")
+tempStormData$EVTYPE <- gsub("HAIL.*", "HAIL", tempStormData$EVTYPE)
+finalStormData <-rbind(finalStormData, subset(tempStormData,
+                        EVTYPE=="HAIL"))
+tempStormData <-subset(tempStormData,EVTYPE!="HAIL")
+tempStormData$EVTYPE <- gsub("TROPICAL STORM .*", "TROPICAL STORM", tempStormData$EVTYPE)
+finalStormData <-rbind(finalStormData, subset(tempStormData,
+                        EVTYPE=="TROPICAL STORM"))
+tempStormData <-subset(tempStormData,EVTYPE!="TROPICAL STORM")
+
+length(unique(tempStormData$EVTYPE))
+
+
+
+
+
+```
+      
                      
+** Analysis
+```{r}
+newStormData %>% group_by(EVTYPE) %>% summarize(HARM = sum(FATALITIES))
+```
+
+
