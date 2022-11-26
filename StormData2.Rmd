@@ -6,19 +6,19 @@ output: html_document
 ---
 
 ----------------------------------------------
-** Synopsis
+## Synopsis
 Weather phenomenon causes a lot of injuries, deaths and damage to both property and crops. Using the data provided by NOAA, this analysis determines which EVTYPE is the most harmful and which causes the most damage in terms of value. The major work to this is the clean-up of the NOAA data, especially the EVTYPE. The final result shows that the TORNADO is the most harmful and causes the most damage.
 
 
-** Initial Set-Up
+## Initial Set-Up
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-install.packages("tidyverse")
+install.packages("tidyverse", repos = "http://cran.us.r-project.org")
 library(tidyverse)
 ```
 
 
-**Loading csv using only relevant columns to preserve memory usage
+## Loading csv using only relevant columns to preserve memory usage
 ```{r read csv, cache=TRUE}
   rawStormData <- read_csv("repdata_data_StormData.csv.bz2", 
                         show_col_types = FALSE, 
@@ -33,13 +33,15 @@ library(tidyverse)
 ```
 
 
-** Data processing 1: totalHarm and totalDMG
--use the PROPDMGEXP and CROPDMGEXP to create two new number columns
+## Data processing 1: totalHarm and totalDMG
+
+- use the PROPDMGEXP and CROPDMGEXP to create two new number columns
 PROPDMGMUL and CROPDMGMUL to create multipliers for PROPDMG and CROPDMG
--replace multiplier NAs with 1's. 
--calculate totalDMG from the products of PROPDMGxPROPDMGMUL and CROPDMGxCROPDMGMUL
--remove entries where totalHarm and totalDMG are zero (i.e., FATALITIES/INJURIES/PROPDMG and CROPDMG are all zero) to remove the unnecessary observations.
--totalHarm and totalDMG are required to answer the two main questions.
+- replace multiplier NAs with 1's. 
+- calculate totalDMG from the products of PROPDMGxPROPDMGMUL and CROPDMGxCROPDMGMUL
+- remove entries where totalHarm and totalDMG are zero (i.e., FATALITIES/INJURIES/PROPDMG and CROPDMG are all zero) to remove the unnecessary observations.
+- totalHarm and totalDMG are required to answer the two main questions.
+
 ```{r processing1}
 
 newStormData <- rawStormData %>% 
@@ -63,12 +65,14 @@ newStormData <- subset(newStormData, !(totalDMG==0 & totalHarm==0))
 ```
 
 
-** Data processing 2: EVTYPE
--Convert all EVTYPE to allcaps to reduce typing error
--Removed multiple spaces
--Change shortened words and mispelled words
--Change plural to singular
--Change alternate namings
+## Data processing 2: EVTYPE
+
+- Convert all EVTYPE to allcaps to reduce typing error
+- Removed multiple spaces
+- Change shortened words and mispelled words
+- Change plural to singular
+- Change alternate namings
+- there are 55 as per NATIONAL WEATHER SERVICE INSTRUCTION 10-1605 (JULY 26, 2021) <https://www.nws.noaa.gov/directives/sym/pd01016005curr.pdf>
 ```{r processing2}
 newStormData$EVTYPE <- str_to_upper(newStormData$EVTYPE)
 newStormData$EVTYPE <- gsub("\\s+", " ", newStormData$EVTYPE)
@@ -155,9 +159,11 @@ newStormData$EVTYPE <- gsub("THUNDERSTORM WIND AND",
                             "THUNDERSTORM WIND", newStormData$EVTYPE)
 newStormData$EVTYPE <- gsub("THUNDERSTORM WIND\\.",
                             "THUNDERSTORM WIND", newStormData$EVTYPE)
-newStormData$EVTYPE <- gsub("THUNDERSTORM WINDS", "THUNDERSTORM WIND",                             newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("THUNDERSTORM WINDS", "THUNDERSTORM WIND",
+                            newStormData$EVTYPE)
 newStormData$EVTYPE <- gsub("TORNDAO", "TORNADO", newStormData$EVTYPE)
-newStormData$EVTYPE <- gsub("^WATERSPOUT-$", "WATERSPOUT", newStormData$EVTYPE)
+newStormData$EVTYPE <- gsub("^WATERSPOUT-$",  "WATERSPOUT", 
+                            newStormData$EVTYPE)
 
 newStormData$EVTYPE <- gsub("WILD FIRE", "WILDFIRE", 
                             newStormData$EVTYPE)
@@ -483,7 +489,7 @@ newStormData$EVTYPE <- gsub("FREEZING RAIN/SNOW", "WINTER WEATHER",
 ```
 
 
-** Data processing 3: Extract valid grouped entries
+## Data processing 3: Extract valid grouped EVTYPE entries
 ``` {r processing 3}
 tempStormData <- newStormData
 finalStormData <-subset(tempStormData, EVTYPE=="COLD/WIND CHILL")
@@ -513,8 +519,9 @@ tempStormData <-subset(tempStormData,
 ```
 
 
-** Data processing 4: EVTYPE again
-- rename grouped entries
+## Data processing 4: EVTYPE again
+
+- correcting grouped entries not using "/"
 ``` {r processing 4}
 tempStormData$EVTYPE <- gsub("DEBRIS FLOW FLOOD",
                              "DEBRIS FLOW/FLOOD",
@@ -628,7 +635,7 @@ tempStormData$EVTYPE <- gsub("WINTER STORM HIGH WIND",
 ```
 
 
-** Data processing 5: EVTYPE
+## Data processing 5: EVTYPE
 - split all remaining entries with /
 ``` {r processing 5}
 tempStormData <- separate_rows(tempStormData, EVTYPE, sep="/")
@@ -636,7 +643,7 @@ tempStormData$EVTYPE <- str_trim(tempStormData$EVTYPE, "both")
 ```
 
 
-** Data processing 6: EVTYPE
+## Data processing 6: EVTYPE
 -Correct additional data by simplication to match standard
 ```{r processing 6}
 tempStormData$EVTYPE <- gsub("^HAIL .*$",
@@ -670,7 +677,8 @@ tempStormData$EVTYPE <- gsub("^TROPICAL STORM .*$",
 ```
 
 
-** Data processing 7: EVTYPE
+## Data processing 7: EVTYPE
+
 - transferring valid EVTYPE entries from tempStormData to finalStormData
 ```{r processing 7}
 finalStormData <-rbind(finalStormData, subset(tempStormData,EVTYPE=="ASTRONOMICAL LOW TIDE"))
@@ -778,7 +786,7 @@ We disregard the leftover EVTYPES due to their ambiguity.
 Please see APPENDIX A.
 
 
-** Data analysis 1: Preparing the summations
+## Data analysis 1: Preparing the summations
 ```{r analysis1}
 dataFatalities <- finalStormData %>% group_by(EVTYPE) %>%
                     summarize(total=sum(FATALITIES)) %>% 
@@ -800,203 +808,208 @@ dataHarm <- rbind(dataHarm, dataInjuries)
 ```
 
 
-** Data analysis 2: Graphing Harm
+## Data analysis 2: Graphing Harm
 ``` {r analysis2}
 g <- ggplot(data=dataHarm, aes(x=total, y=EVTYPE, group=GROUP))
 g + geom_bar(stat="identity") + facet_wrap(~GROUP, nrow=3) + labs(title="Danger scale of weather phenomenon", x="Total")
 ```
-We can see from the chart that the EVTYPE that causes the most harm is the tornado.
 
-** Data analysis 3: Graphing DMG
-``` {r analysis2}
+- We can see from the chart that the EVTYPE that causes the most harm is the tornado.
+
+## Data analysis 3: Graphing DMG
+``` {r analysis3}
 g2 <- ggplot(data=dataDMG, aes(x=total, y=EVTYPE))
 g2 + geom_bar(stat="identity") + labs(title="Damage scale of weather phenomenon", x="Total")
 ```
-We can see from the chart that the EVTYPE that causes the most damage is the tornado.
+
+- We can see from the chart that the EVTYPE that causes the most damage is the tornado.
 
 
-** Results
--- The EVTYPE that causes the most injuries, deaths and both combined is the **tornado**.
--- The EVTYPE that causes the most damage is also the **tornado**.
+## Results
+
+- The EVTYPE that causes the most injuries, deaths and both combined is the **tornado**.
+- The EVTYPE that causes the most damage is also the **tornado**.
 
 
-** APPENDIX A -- Ambiguous EVTYPES that were discarded
--APACHE COUNTY
--ASTRONOMICAL HIGH TIDE
--AWNING
--BEACH EROSION
--BLOWING SNOW
--COASTAL EROSION
--COLD AND WER
--COLD AND WET CONDITIONS
--DROWNING
--EROSION
--EXCESSIVE WETNESS
--FALLING SNOW
--GRADIENT WIND
--HAZARDOUS SURF
--HEAVY SEAS
--HIGH
--HIGH SEAS
--HIGH WAVES
--ICE
--ICE FLOES
--LATE SEASON SNOW
--LIGHT SNOW
--LIGHT SNOWFALL
--MARINE ACCIDENT
--MARINE MISHAP
--MIXED PRECIPITATION
--MIXED PRECIP
--NON-SEVERE WIND DAMAGE
--NON-THUNDERSTORM WIND
--NON THUNDERSTORM WIND
--OTHER
--RAIN
--RAINTORM
--ROGUE WAVE
--ROUGH SEAS
--ROUGH SURF
--SEVERE TURBULENCE
--SEVERE WEATHER
--SNOW
--THUNDERSNOW
--THUNDERSTORM DAMAGE TO
--THUNDERSTORM HAIL
--TREE
--TREES
--UNSEASONAL RAIN
--WIND(S)
--WIND AND WAVE
--WIND DAMAGE
--?
+## APPENDIX A -- Ambiguous EVTYPES that were discarded
 
-** Appendix B -- Converted EVTYPES
+- APACHE COUNTY
+- ASTRONOMICAL HIGH TIDE
+- AWNING
+- BEACH EROSION
+- BLOWING SNOW
+- COASTAL EROSION
+- COLD AND WER
+- COLD AND WET CONDITIONS
+- DROWNING
+- EROSION
+- EXCESSIVE WETNESS
+- FALLING SNOW
+- GRADIENT WIND
+- HAZARDOUS SURF
+- HEAVY SEAS
+- HIGH
+- HIGH SEAS
+- HIGH WAVES
+- ICE
+- ICE FLOES
+- LATE SEASON SNOW
+- LIGHT SNOW
+- LIGHT SNOWFALL
+- MARINE ACCIDENT
+- MARINE MISHAP
+- MIXED PRECIPITATION
+- MIXED PRECIP
+- NON-SEVERE WIND DAMAGE
+- NON-THUNDERSTORM WIND
+- NON THUNDERSTORM WIND
+- OTHER
+- RAIN
+- RAINTORM
+- ROGUE WAVE
+- ROUGH SEAS
+- ROUGH SURF
+- SEVERE TURBULENCE
+- SEVERE WEATHER
+- SNOW
+- THUNDERSNOW
+- THUNDERSTORM DAMAGE TO
+- THUNDERSTORM HAIL
+- TREE
+- TREES
+- UNSEASONAL RAIN
+- WIND(S)
+- WIND AND WAVE
+- WIND DAMAGE
+- ?
+
+## Appendix B -- Converted EVTYPES
+
 - COLD/WIND CHILL
-  -- UNSEASONABLY COLD
-  -- LOW TEMPERATURE
-  -- HYPOTHERMIA/EXPOSURE
-  -- HYPOTHERMIA
-  -- COLD WAVE
-  -- COLD WEATHER
-  -- COLD TEMPERATURES
-  -- UNSEASONABLY COLD
-  -- UNSEASONABLE COLD
-  -- EXTENDED COLD
+  - UNSEASONABLY COLD
+  - LOW TEMPERATURE
+  - HYPOTHERMIA/EXPOSURE
+  - HYPOTHERMIA
+  - COLD WAVE
+  - COLD WEATHER
+  - COLD TEMPERATURES
+  - UNSEASONABLY COLD
+  - UNSEASONABLE COLD
+  - EXTENDED COLD
 - DEBRIS FLOW
-  -- LANDSLIDE(S)
-  -- LANDSLUMP
-  -- ROCK SLIDE
-  -- MUDSLIDE(S)
+  - LANDSLIDE(S)
+  - LANDSLUMP
+  - ROCK SLIDE
+  - MUDSLIDE(S)
 - DENSE FOG
-  -- FOG
+  - FOG
 - DUST DEVIL
-  -- LANDSPOUT
+  - LANDSPOUT
 - DROUGHT
-  -- DRY
+  - DRY
 - EXTREME COLD/WIND CHILL
-  -- SNOW/ BITTER COLD
-  -- RECORD COLD
-  -- BITTER COLD
+  - SNOW/ BITTER COLD
+  - RECORD COLD
+  - BITTER COLD
 - DUST STORM
-  -- BLOWING DUST
+  - BLOWING DUST
 - EXCESSIVE HEAT
-  -- EXTREME HEAT
-  -- RECORD HEAT
-  -- RECORD/EXCESSIVE HEAT
+  - EXTREME HEAT
+  - RECORD HEAT
+  - RECORD/EXCESSIVE HEAT
 - FLASHFLOOD
-  -- DAM BREAK
-  -- FLASH FLOOD FROM ICE JAMS
-  -- FLASH FLOOD (MINOR
-  -- ICE JAM FLOOD
-  -- RAPIDLY RISING WATER
-  -- FLASH FLOOD/ STREET
-  -- ICE JAM
-  -- BREAK UP FLOOD
-  -- BREAKUP FLOOD
-  -- HIGH WATER
+  - DAM BREAK
+  - FLASH FLOOD FROM ICE JAMS
+  - FLASH FLOOD (MINOR
+  - ICE JAM FLOOD
+  - RAPIDLY RISING WATER
+  - FLASH FLOOD/ STREET
+  - ICE JAM
+  - BREAK UP FLOOD
+  - BREAKUP FLOOD
+  - HIGH WATER
 - FLOOD
-  -- URBAN AND SMALL STREAM FLOOD
-  -- SMALL STREAM FLOOD
-  -- URBAN/SML STREAM STREAM
-  -- URBAN/SMALL STREAM
-  -- RIVER FLOOD
-  -- SNOWMELT FLOOD
-  -- RIVER AND STREAM FLOOD
-  -- RECORD FLOOD
-  -- MAJOR FLOOD
-  -- MINOR FLOOD
-  -- URBAN FLOOD
-  -- URBAN/FLOOD
-  -- URBAN AND SMALL
-  -- URBAN SMALL
-  -- SMALL STREAM URBAN
-  -- RURAL FLOOD
-  -- FLOOD/FLOOD
+  - URBAN AND SMALL STREAM FLOOD
+  - SMALL STREAM FLOOD
+  - URBAN/SML STREAM STREAM
+  - URBAN/SMALL STREAM
+  - RIVER FLOOD
+  - SNOWMELT FLOOD
+  - RIVER AND STREAM FLOOD
+  - RECORD FLOOD
+  - MAJOR FLOOD
+  - MINOR FLOOD
+  - URBAN FLOOD
+  - URBAN/FLOOD
+  - URBAN AND SMALL
+  - URBAN SMALL
+  - SMALL STREAM URBAN
+  - RURAL FLOOD
+  - FLOOD/FLOOD
 - FREEZING FOG
-  -- FOG AND COLD TEMPERATURES
+  - FOG AND COLD TEMPERATURES
 - HEAT
-  -- UNSEASONABLY WARM
-  -- WARM WEATHER
-  -- HYPERTHERMIA/EXPOSURE
-  -- HEAT WAVE
+  - UNSEASONABLY WARM
+  - WARM WEATHER
+  - HYPERTHERMIA/EXPOSURE
+  - HEAT WAVE
 - HEAVY RAIN
-  -- RECORD RAINFALL
-  -- TORRENTIAL RAINFALL
-  -- EXCESSIVE RAINFALL
-  -- HEAVY PRECIPITATION
-  -- HEAVY SHOWER
+  - RECORD RAINFALL
+  - TORRENTIAL RAINFALL
+  - EXCESSIVE RAINFALL
+  - HEAVY PRECIPITATION
+  - HEAVY SHOWER
 - HEAVY SNOW
-  -- RECORD SNOW
-  -- EXCESSIVE SNOW
-  -- HEAVY SNOWPACK
-  -- SNOW ACCUMULATION
-  -- HEAVY SNOW SHOWER
-  -- HEAVY MIX (with HEAVY RAIN)
+  - RECORD SNOW
+  - EXCESSIVE SNOW
+  - HEAVY SNOWPACK
+  - SNOW ACCUMULATION
+  - HEAVY SNOW SHOWER
+  - HEAVY MIX (with HEAVY RAIN)
 - HIGH SURF
-  -- HEAVY SURF
-  -- HIGH SWELLS
-  -- HIGH TIDES
-  -- HEAVY SWELLS
+  - HEAVY SURF
+  - HIGH SWELLS
+  - HIGH TIDES
+  - HEAVY SWELLS
 - LAKE-EFFECT SNOW
-  -- HEAVY LAKE SNOW
+  - HEAVY LAKE SNOW
 - LAKESHORE FLOOD
-  -- TIDAL FLOOD
+  - TIDAL FLOOD
 - MARINE HIGH WIND
-  -- HIGH WIND/SEAS
-  -- HIGH WIND AND SEAS
+  - HIGH WIND/SEAS
+  - HIGH WIND AND SEAS
 - MARINE TROPICAL STORM
-  -- COASTAL STORM
+  - COASTAL STORM
 - RIP CURRENT
-  -- HURRICANE-GENERATED SWELLS
+  - HURRICANE-GENERATED SWELLS
 - SLEET
-  -- FREEZING RAIN
+  - FREEZING RAIN
 - STORM SURGE/TIDE
-  -- COASTAL SURGE
+  - COASTAL SURGE
 - STRONG WIND
-  -- WIND STORM
-  -- GUSTY WIND
+  - WIND STORM
+  - GUSTY WIND
 - TORNADO
-  -- WHIRLWIND
+  - WHIRLWIND
 - THUNDERSTORM WIND
-  -- GUSTNADO
-  -- DOWNBURST
-  -- SEVERE THUNDERSTORM WIND
-  -- MICROBURST and similar entries
-  -- STORM FORCE WIND
+  - GUSTNADO
+  - DOWNBURST
+  - SEVERE THUNDERSTORM WIND
+  - MICROBURST and similar entries
+  - STORM FORCE WIND
 - WILDFIRE
-  -- GRASS FIRE
-  -- BRUSH FIRE
-  -- FOREST FIRE
+  - GRASS FIRE
+  - BRUSH FIRE
+  - FOREST FIRE
 - WINTER WEATHER
-  -- WINTRY MIX
-  -- GLAZE ICE
-  -- GLAZE
-  -- SNOW SQUALLS
-  -- ICE ROADS
-  -- ICE AND SNOW
-  -- BLACK ICE
-  -- COLD AND SNOWS
-  -- FREEZING DRIZZLE
-  -- SNOW FREEZING RAIN
-  -- FREEZING RAIN/SNOW
+  - WINTRY MIX
+  - GLAZE ICE
+  - GLAZE
+  - SNOW SQUALLS
+  - ICE ROADS
+  - ICE AND SNOW
+  - BLACK ICE
+  - COLD AND SNOWS
+  - FREEZING DRIZZLE
+  - SNOW FREEZING RAIN
+  - FREEZING RAIN/SNOW
